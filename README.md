@@ -26,7 +26,7 @@ La aplicación permite gestionar alojamientos y reservaciones, consumiendo una A
 ## 🚀 Ejecución del proyecto
 1. 📥 Clona el repositorio:
    ```bash
-   git clone <URL-del-repositorio>
+   git clone https://github.com/franklinrony/KODIGO-API
    ```
 2. 📦 Instala las dependencias:
    ```bash
