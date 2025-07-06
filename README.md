@@ -42,7 +42,7 @@ La aplicación permite gestionar alojamientos y reservaciones, consumiendo una A
 - 🛡️ El token JWT es simulado y se agrega automáticamente a las solicitudes mediante un interceptor HTTP ubicado en `src/interceptor/httpInterceptor.ts`.
 
 ## 👥 Integrantes del grupo
-- 
+- Franklin Rony Cortez Barrera
 -
 -
 -
