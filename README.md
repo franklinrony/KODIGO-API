@@ -45,9 +45,8 @@ La aplicación permite gestionar alojamientos y reservaciones, consumiendo una A
 
 ## 👥 Integrantes del grupo
 - Franklin Rony Cortez Barrera
--
--
--
+- Rocío Guadalupe Martínez Hernández
+- Luis Antonio Turcios Alvarez
 -
 ---
 Proyecto para la tarea del módulo de React - Bootcamp Fullstack Junior (FSJ28) - Kodigo 🚀 
