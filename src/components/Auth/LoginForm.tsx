@@ -10,6 +10,8 @@ const LoginForm: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const { login, user, isLoading } = useAuth();
+  const [showPasswordInfo, setShowPasswordInfo] = useState(false);
+  const [showSupportInfo, setShowSupportInfo] = useState(false);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -37,7 +39,7 @@ const LoginForm: React.FC = () => {
           <div className="flex items-center justify-center mb-4">
             <LogIn className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Iniciar Sesión</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Iniciar Sesión en AlojApp</h1>
           <p className="text-blue-600 mt-2">
             <span className="inline-flex items-center">
               <span className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center mr-2">
@@ -73,9 +75,31 @@ const LoginForm: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700">
                 Contraseña
               </label>
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-500">
+              <button 
+                type="button" className="text-sm text-blue-600 hover:text-blue-500 focus:outline-none"
+                onClick={() => setShowPasswordInfo(true)}
+                >
                 ¿Olvidaste tu contraseña?
-              </a>
+              </button>
+              {showPasswordInfo && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+                  <div className="bg-white border border-blue-200 shadow-lg rounded-md p-6 w-[90%] max-w-sm relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswordInfo(false)}
+                      className="absolute top-2 right-3 text-blue-600 hover:text-blue-800 text-lg font-bold"
+                      aria-label="Cerrar"
+                    >
+                      ×
+                    </button>
+                    <h3 className="text-md font-semibold text-blue-700 mb-2">Información de contraseña</h3>
+                    <p className="text-sm text-gray-700">
+                      Tu contraseña es única y confidencial. Si no la recuerdas, contactate con soporte para más ayuda.
+                    </p>
+                  </div>
+                </div>
+              )}
+
             </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -146,9 +170,19 @@ const LoginForm: React.FC = () => {
             </span>
           </p>
           <div className="mt-4">
-            <a href="#" className="text-sm text-blue-600 hover:text-blue-500">
+            <button
+              type="button"
+              onClick={() => setShowSupportInfo(!showSupportInfo)}
+              className="text-sm text-blue-600 hover:text-blue-500 focus:outline-none"
+            >
               ¿Necesitas ayuda? Contacta soporte
-            </a>
+            </button>
+              {showSupportInfo && (
+                <div className="mt-2 bg-gray-50 border border-gray-200 p-4 rounded-md text-sm text-gray-700">
+                  La app web de gestión de alojamientos funciona <strong>24/7</strong>.  
+                  Puedes contactarnos al <strong>+503 7890-1503</strong> para asistencia inmediata.
+                </div>
+              )}
           </div>
         </div>
       </div>
