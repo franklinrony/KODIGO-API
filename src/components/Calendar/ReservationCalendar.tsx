@@ -1,10 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Filter, Plus } from 'lucide-react';
 import { getReservations } from '../../services/BookingsService';
 import { getAccommodations } from '../../services/AccommodationsService';
 import Modal from '../Common/Modal';
 import ReservationForm from '../Reservations/ReservationForm';
 import { Reservation, Accommodation } from '../../types';
+// Importaciones de FullCalendar
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import esLocale from '@fullcalendar/core/locales/es';
+
 
 const ReservationCalendar: React.FC = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -15,68 +21,47 @@ const ReservationCalendar: React.FC = () => {
   const [searchGuest, setSearchGuest] = useState('');
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
 
+  const [showFilters, setShowFilters] = useState(true); // estado para mostrar/ocultar filtros
+  const calendarRef = useRef<FullCalendar | null>(null); // referencia para fullcalendar
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
   useEffect(() => {
     getReservations().then(setReservations);
     getAccommodations().then(setAccommodations);
   }, []);
+
+  useEffect(() => {
+  Promise.all([
+    getReservations().then(setReservations),
+    getAccommodations().then(setAccommodations)
+  ]).finally(() => setIsLoadingData(false));
+}, []);
 
   const monthNames = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
-  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
-  const filteredReservations = useMemo(() => {
-    return reservations.filter(reservation => {
-      const matchesAccommodation = selectedAccommodation === 'all' || reservation.accommodationId === selectedAccommodation;
-      const matchesStatus = selectedStatus === 'all' || reservation.status === selectedStatus;
-      const matchesGuest = !searchGuest || reservation.guestName.toLowerCase().includes(searchGuest.toLowerCase());
-      
-      const reservationStart = new Date(reservation.checkIn);
-      const reservationEnd = new Date(reservation.checkOut);
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-      
-      return matchesAccommodation && matchesStatus && matchesGuest &&
-        ((reservationStart.getMonth() === currentMonth && reservationStart.getFullYear() === currentYear) ||
-         (reservationEnd.getMonth() === currentMonth && reservationEnd.getFullYear() === currentYear) ||
-         (reservationStart < new Date(currentYear, currentMonth, 1) && reservationEnd > new Date(currentYear, currentMonth + 1, 0)));
-    });
-  }, [reservations, selectedAccommodation, selectedStatus, searchGuest, currentDate]);
-
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    const days = [];
-
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-
-    // Add days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
-    }
-
-    return days;
-  };
-
-  const getReservationsForDate = (date: Date) => {
-    if (!date) return [];
-    
-    return filteredReservations.filter(reservation => {
-      const start = new Date(reservation.checkIn);
-      const end = new Date(reservation.checkOut);
-      return date >= start && date < end;
-    });
-  };
+  const calendarEvents = useMemo(() => {
+    return reservations
+      .filter(reservation => {
+        const matchesAccommodation = selectedAccommodation === 'all' || reservation.accommodationId === selectedAccommodation;
+        const matchesStatus = selectedStatus === 'all' || reservation.status.toLowerCase() === selectedStatus.toLowerCase();
+        const matchesGuest = !searchGuest || reservation.guestName.toLowerCase().includes(searchGuest.toLowerCase());
+        return matchesAccommodation && matchesStatus && matchesGuest;
+      })
+      .map(reservation => ({
+        id: reservation.id.toString(),
+        title: `${reservation.guestName} - ${reservation.accommodationName}`,
+        start: reservation.checkIn,
+        end: new Date(new Date(reservation.checkOut).getTime() + 24 * 60 * 60 * 1000), // Añadimos un día para incluir el checkout, esto se debe a que FullCalendar considera el `end` como exclusivo
+        allDay: true,
+        extendedProps: {
+          status: reservation.status, 
+        },
+        classNames: [`event-${reservation.status.toLowerCase()}`],
+      }));
+  }, [reservations, selectedAccommodation, selectedStatus, searchGuest]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -91,19 +76,17 @@ const ReservationCalendar: React.FC = () => {
     }
   };
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      if (direction === 'prev') {
-        newDate.setMonth(newDate.getMonth() - 1);
-      } else {
-        newDate.setMonth(newDate.getMonth() + 1);
-      }
-      return newDate;
-    });
-  };
-
-  const days = getDaysInMonth(currentDate);
+const navigateMonth = (direction: 'prev' | 'next') => {
+  if (calendarRef.current) {
+    const calendarApi = calendarRef.current.getApi();
+    if (direction === 'prev') {
+      calendarApi.prev();
+    } else {
+      calendarApi.next();
+    }
+    setCurrentDate(calendarApi.getDate());
+  }
+};
 
   return (
     <div className="space-y-6">
@@ -127,10 +110,13 @@ const ReservationCalendar: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Filtros</span>
-          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)} 
+            className="px-4 py-2 rounded-md flex items-center space-x-2 transition-colors bg-gray-200 hover:bg-gray-300 text-gray-700"
+          >
+            <Filter className="w-4 h-4" />
+            <span>Filtros</span>
+          </button>
           <button
             onClick={() => setIsFormModalOpen(true)}
             className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center space-x-2 transition-colors"
@@ -141,92 +127,77 @@ const ReservationCalendar: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Alojamiento</label>
-          <select
-            value={selectedAccommodation}
-            onChange={(e) => setSelectedAccommodation(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">Todos los alojamientos</option>
-            {accommodations.map((accommodation) => (
-              <option key={accommodation.id} value={accommodation.id}>
-                {accommodation.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="CONFIRMED">Confirmada</option>
-            <option value="CANCELLED">Cancelada</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Buscar huésped</label>
-          <input
-            type="text"
-            value={searchGuest}
-            onChange={(e) => setSearchGuest(e.target.value)}
-            placeholder="Nombre del huésped..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="grid grid-cols-7 gap-0 bg-gray-50">
-          {dayNames.map((day) => (
-            <div key={day} className="p-3 text-center text-sm font-medium text-gray-700 border-r border-gray-200 last:border-r-0">
-              {day}
+        {showFilters && ( 
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Alojamiento</label>
+              <select
+                value={selectedAccommodation}
+                onChange={(e) => setSelectedAccommodation(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">Todos los alojamientos</option>
+                {accommodations.map((accommodation) => (
+                  <option key={accommodation.id} value={accommodation.id}>
+                    {accommodation.name}
+                  </option>
+                ))}
+              </select>
             </div>
-          ))}
-        </div>
 
-        <div className="grid grid-cols-7 gap-0">
-          {days.map((date, index) => (
-            <div
-              key={index}
-              className={`min-h-[120px] p-2 border-r border-b border-gray-200 last:border-r-0 ${
-                date ? 'bg-white' : 'bg-gray-50'
-              }`}
-            >
-              {date && (
-                <>
-                  <div className="text-sm font-medium text-gray-900 mb-2">
-                    {date.getDate()}
-                  </div>
-                  <div className="space-y-1">
-                    {getReservationsForDate(date).slice(0, 2).map((reservation) => (
-                      <div
-                        key={reservation.id}
-                        className={`text-xs p-1 rounded border ${getStatusColor(reservation.status)} truncate`}
-                        title={`${reservation.guestName} - ${reservation.accommodationName}`}
-                      >
-                        <div className="font-medium truncate">{reservation.guestName}</div>
-                        <div className="truncate">{reservation.accommodationName}</div>
-                      </div>
-                    ))}
-                    {getReservationsForDate(date).length > 2 && (
-                      <div className="text-xs text-gray-500 font-medium">
-                        +{getReservationsForDate(date).length - 2} más
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">Todos los estados</option>
+                <option value="CONFIRMED">Confirmada</option>
+                <option value="PENDING">Pendiente</option>
+                <option value="CANCELLED">Cancelada</option>
+              </select>
             </div>
-          ))}
-        </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Buscar huésped</label>
+              <input
+                type="text"
+                value={searchGuest}
+                onChange={(e) => setSearchGuest(e.target.value)}
+                placeholder="Nombre del huésped..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        )}
+
+      <div className="bg-white rounded-lg shadow overflow-hidden p-4">
+        <FullCalendar
+          ref={calendarRef} 
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth" 
+          events={calendarEvents} 
+          locale={esLocale} 
+          headerToolbar={{
+            left: '', 
+            center: '', 
+            right: '', 
+          }}
+          datesSet={(dateInfo) => {
+            setCurrentDate(dateInfo.view.calendar.getDate());
+          }}
+          eventContent={(arg) => {
+            const status = arg.event.extendedProps.status;
+            const statusClass = getStatusColor(status.toUpperCase()); 
+            return (
+              <div className={`p-1 rounded text-xs truncate cursor-pointer ${statusClass}`} title={arg.event.title}>
+                <div className="font-medium truncate">{arg.event.title.split(' - ')[0]}</div>
+                <div className="truncate">{arg.event.title.split(' - ')[1]}</div>
+              </div>
+            );
+          }}
+        />
       </div>
 
       <div className="bg-white rounded-lg shadow p-4">
@@ -252,7 +223,10 @@ const ReservationCalendar: React.FC = () => {
         title="Nueva Reservación"
         size="lg"
       >
-        <ReservationForm onClose={() => setIsFormModalOpen(false)} />
+         <ReservationForm onClose={() => setIsFormModalOpen(false)} onCreated={() => {
+          setIsFormModalOpen(false);
+          getReservations().then(setReservations); 
+        }} />
       </Modal>
     </div>
   );

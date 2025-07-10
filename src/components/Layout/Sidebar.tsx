@@ -21,7 +21,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     { icon: Home, label: 'Panel de Control', path: '/' },
     { icon: Building, label: 'Alojamientos', path: '/accommodations' },
     { icon: Calendar, label: 'Reservaciones', path: '/reservations' },
-    { icon: Calendar, label: 'Ver reservaciones por fechas', path: '/reservations-by-date' }
+    { icon: Calendar, label: 'Ver reservaciones por fechas', path: '/calendar' }
   ];
 
   return (
