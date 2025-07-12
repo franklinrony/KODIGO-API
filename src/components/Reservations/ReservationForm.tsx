@@ -21,7 +21,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ onClose, onCreated })
     checkOut: string;
     guests: number;
     totalAmount: number;
-    status: 'confirmed' | 'cancelled';
+    status: 'pending' | 'confirmed' | 'cancelled';
   }>({
     accommodationId: '',
     guestName: user?.name || '',
@@ -30,7 +30,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ onClose, onCreated })
     checkOut: '',
     guests: 1,
     totalAmount: 0,
-    status: 'confirmed',
+    status: 'pending',
   });
   const [errors, setErrors] = useState<{checkIn?: string; checkOut?: string}>({});
   const [loading, setLoading] = useState(false);
@@ -215,8 +215,8 @@ const ReservationForm: React.FC<ReservationFormProps> = ({ onClose, onCreated })
           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           required
         >
+          <option value="pending">Pendiente</option>
           <option value="confirmed">Confirmada</option>
-          <option value="cancelled">Cancelada</option>
         </select>
       </div>
 

@@ -24,13 +24,15 @@ export interface BookingPayload {
   checkIn: string;
   checkOut: string;
   totalAmount: number;
-  status: 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled';
   accommodationId: string;
   guests: number;
   user_id?: number;
 }
 
 export const addReservation = async (reservation: BookingPayload): Promise<void> => {
+  console.log('Adding reservation:', reservation);
+  
   await axios.post(`${API_BASE_URL}/api/V1/booking`, {
     booking: `BK${Date.now()}`.slice(0, 10),
     check_in_date: reservation.checkIn,
