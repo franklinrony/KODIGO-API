@@ -6,6 +6,7 @@ import ReservationForm from './ReservationForm';
 import ReservationDetails from './ReservationDetails';
 import { Reservation } from '../../types';
 import Spinner from '../Common/Spinner';
+import Pagination from "../Common/Pagination";
 
 const ReservationList: React.FC = () => {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -185,25 +186,15 @@ const ReservationList: React.FC = () => {
               </div>
             ))}
           </div>
+
           {totalPages > 1 && (
-            <div className="flex justify-center items-center my-4 space-x-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
-              >
-                Anterior
-              </button>
-              <span className="mx-2">Página {currentPage} de {totalPages}</span>
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded bg-gray-200 text-gray-700 disabled:opacity-50"
-              >
-                Siguiente
-              </button>
-            </div>
+            <Pagination
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           )}
+          
         </div>
       )}
 

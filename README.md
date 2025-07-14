@@ -47,5 +47,6 @@ La aplicación permite gestionar alojamientos y reservaciones, consumiendo una A
 - Franklin Rony Cortez Barrera
 - Rocío Guadalupe Martínez Hernández https://github.com/rohernanx30
 - Luis Antonio Turcios Alvarez
+- [Geofrey Steve Muñoz Tobar](https://github.com/MrxSteve)
 ---
 Proyecto para la tarea del módulo de React - Bootcamp Fullstack Junior (FSJ28) - Kodigo 🚀 
